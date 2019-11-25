@@ -48,3 +48,6 @@ export default class Person {
 });
 
 server.listen(80);
+
+// eslint-disable-next-line no-console
+console.log('Server started on port 80...');
