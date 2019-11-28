@@ -1,53 +1,49 @@
+/* eslint-disable no-console */
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+
+const aliases = {
+  '/': '/index.html',
+};
+const contentTypes = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+};
+const fallbackExtension = '.js';
+const fallbackContentType = 'text/plain';
 
 const server = http.createServer((request, response) => {
-  switch (request.url) {
-    case '':
-    case '/index.html':
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.end(`
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Test Server</title>
-  </head>
-  <body>
-    <script type="module">
-      import Person from '/modules/person.js';
+  const { url } = request;
 
-      const person = new Person('Ruslan', 33);
+  console.log(`Requested url: ${url}`);
 
-      person.sayName();
-    </script>
-  </body>
-</html>
-      `);
-      break;
-    case '/modules/person.js':
-      response.setHeader('Content-Type', 'application/javascript; charset=utf-8 ');
-      response.end(`
-export default class Person {
-  constructor(name, age) {
-    this.name = name;
-    this.age = age;
+  let fileName = aliases[url] || url;
+  let extension = path.extname(fileName);
+
+  fileName = path.join('static', fileName);
+
+  if (!extension && fs.existsSync(fileName + fallbackExtension)) {
+    extension = fallbackExtension;
+    fileName += fallbackExtension;
   }
 
-  sayName() {
-    console.log(\`My name is \${this.name}\`);
-  }
-}
-      `);
-      break;
-    default:
-      response.statusCode = 404;
-      response.end('Not found!');
-      break;
+  if (fs.existsSync(fileName)) {
+    const contentType = contentTypes[extension] || fallbackContentType;
+
+    console.log(`File name ${fileName}`);
+    console.log(`Extension: ${extension}`);
+    console.log(`Content type: ${contentType}`);
+    response.setHeader('Content-Type', contentType);
+    response.end(fs.readFileSync(fileName));
+  } else {
+    console.error('Not found');
+    response.statusCode = 404;
+    response.setHeader('Content-Type', fallbackContentType);
+    response.end('404 Not Found');
   }
 });
 
 server.listen(80);
 
-// eslint-disable-next-line no-console
 console.log('Server started on port 80...');
